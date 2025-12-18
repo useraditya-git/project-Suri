@@ -1,15 +1,13 @@
-FROM maven:3.9.9-eclipse-temurin-17 AS build
+# Build stage
+FROM node:18-alpine AS build
 WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-COPY pom.xml .
-COPY src ./src
-
-RUN mvn clean package -DskipTests
-
-FROM eclipse-temurin:17-jre
-WORKDIR /app
-
-COPY --from=build /app/target/*.jar app.jar
-
-EXPOSE 8080
-ENTRYPOINT ["java","-jar","app.jar"]
+# Run stage
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
